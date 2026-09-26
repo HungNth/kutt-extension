@@ -3,6 +3,7 @@ import {createContext, useReducer, useContext, type ReactNode} from 'react';
 
 export enum RequestStatusActionTypes {
   SET_REQUEST_STATUS = 'set-request-status',
+  SET_ACTION_STATUS = 'set-action-status',
   SET_LOADING = 'set-loading',
 }
 
@@ -19,18 +20,30 @@ type SET_LOADING = {
   payload: boolean;
 };
 
-type Action = SET_REQUEST_STATUS | SET_LOADING;
+type ActionStatus = {
+  error: boolean;
+  message: string;
+};
+
+type SET_ACTION_STATUS = {
+  type: RequestStatusActionTypes.SET_ACTION_STATUS;
+  payload: ActionStatus | null;
+};
+
+type Action = SET_REQUEST_STATUS | SET_ACTION_STATUS | SET_LOADING;
 
 type InitialValues = {
   loading: boolean;
   error: boolean | null;
   message: string;
+  actionStatus: ActionStatus | null;
 };
 
 const initialValues: InitialValues = {
   loading: true,
   error: null,
   message: '',
+  actionStatus: null,
 };
 
 type State = InitialValues;
@@ -45,6 +58,10 @@ function requestStatusReducer(state: State, action: Action): State {
   switch (action.type) {
     case RequestStatusActionTypes.SET_REQUEST_STATUS: {
       return {...state, ...action.payload};
+    }
+
+    case RequestStatusActionTypes.SET_ACTION_STATUS: {
+      return {...state, actionStatus: action.payload};
     }
 
     case RequestStatusActionTypes.SET_LOADING: {

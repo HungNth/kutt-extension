@@ -73,6 +73,10 @@ function Form(): JSX.Element {
   async function handleFormSubmit(): Promise<void> {
     // enable loading screen
     setIsSubmitting(true);
+    requestStatusDispatch({
+      type: RequestStatusActionTypes.SET_ACTION_STATUS,
+      payload: null,
+    });
 
     // Get target link to shorten
     const tabs = await getCurrentTab();
@@ -133,6 +137,22 @@ function Form(): JSX.Element {
         return {...prev, customurl: '', password: ''};
       });
       setFormErrors({});
+
+      try {
+        await navigator.clipboard.writeText(link);
+        requestStatusDispatch({
+          type: RequestStatusActionTypes.SET_ACTION_STATUS,
+          payload: {error: false, message: 'Link copied'},
+        });
+      } catch {
+        requestStatusDispatch({
+          type: RequestStatusActionTypes.SET_ACTION_STATUS,
+          payload: {
+            error: true,
+            message: 'Automatic copy failed. Click the link to copy it.',
+          },
+        });
+      }
     } else {
       // errored
       requestStatusDispatch({
