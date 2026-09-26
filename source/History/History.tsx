@@ -5,10 +5,7 @@ import {
   useShortenedLinks,
   ShortenedLinksActionTypes,
 } from '../contexts/shortened-links-context';
-import {
-  HostProperties,
-  useExtensionSettings,
-} from '../contexts/extension-settings-context';
+import {useExtensionSettings} from '../contexts/extension-settings-context';
 import {
   useRequestStatus,
   RequestStatusActionTypes,
@@ -21,9 +18,8 @@ import {
   AuthRequestBodyProperties,
   ApiErroredProperties,
   ErrorStateProperties,
-  Kutt,
 } from '../Background';
-import {isValidUrl} from '../util/link';
+import {getConnectionConfig} from '../util/connection';
 
 import BodyWrapper from '../components/BodyWrapper';
 import Loader from '../components/Loader';
@@ -40,7 +36,7 @@ function History(): JSX.Element {
     error: null,
     message: '',
   });
-  const [hostUrl, setHostUrl] = useState<string>(Kutt.hostUrl);
+  const [hostUrl, setHostUrl] = useState<string>('');
 
   useEffect(() => {
     async function getUrlsHistoryStats(): Promise<void> {
@@ -48,40 +44,38 @@ function History(): JSX.Element {
       // **** GET EXTENSIONS SETTINGS **** //
       // ********************************* //
       const {settings = {}} = await getExtensionSettings();
-      const advancedSettings: boolean =
-        (settings?.advanced as boolean) || false;
+      const connection = getConnectionConfig(settings);
 
-      const defaultHost: HostProperties =
-        (advancedSettings &&
-          (settings?.host as string) &&
-          isValidUrl(settings.host as string) && {
-            hostDomain:
-              (settings.host as string)
-                .replace('http://', '')
-                .replace('https://', '')
-                .replace('www.', '')
-                .split(/[/?#]/)[0] || '', // extract domain
-            hostUrl: (settings.host as string).endsWith('/')
-              ? (settings.host as string).slice(0, -1)
-              : (settings.host as string), // slice `/` at the end
-          }) ||
-        Kutt;
+      if (!connection) {
+        setErrored({
+          error: true,
+          message:
+            'Error: Extension is not configured. Please set your Kutt Instance URL and API Key in Options.',
+        });
+        requestStatusDispatch({
+          type: RequestStatusActionTypes.SET_LOADING,
+          payload: false,
+        });
+        return;
+      }
 
-      // inject existing keys (if field doesn't exist, use default)
+      const historyEnabled = Object.prototype.hasOwnProperty.call(
+        settings,
+        'history'
+      )
+        ? (settings.history as boolean)
+        : true;
+
       const defaultExtensionConfig = {
-        apikey: (settings?.apikey as string)?.trim() || '',
-        history: (settings?.history as boolean) || false,
-        advanced:
-          defaultHost.hostUrl.trim() !== Kutt.hostUrl && advancedSettings, // disable `advanced` if customhost is not set
-        host: defaultHost,
+        apikey: connection.apikey,
+        history: historyEnabled,
+        host: {
+          hostDomain: connection.hostDomain,
+          hostUrl: connection.hostUrl,
+        },
       };
 
-      setHostUrl(defaultExtensionConfig.host.hostUrl);
-
-      // extensionSettingsDispatch({
-      //   type: ExtensionSettingsActionTypes.HYDRATE_EXTENSION_SETTINGS,
-      //   payload: defaultExtensionConfig,
-      // });
+      setHostUrl(connection.hostUrl);
 
       if (defaultExtensionConfig.history) {
         // ****************************************************** //
@@ -94,11 +88,11 @@ function History(): JSX.Element {
 
         // call api
         const response:
-          | SuccessfulUrlsHistoryFetchProperties
-          | ApiErroredProperties = await messageUtil.send(
-          FETCH_URLS_HISTORY,
-          urlsHistoryFetchRequetBody
-        );
+          SuccessfulUrlsHistoryFetchProperties | ApiErroredProperties =
+          await messageUtil.send(
+            FETCH_URLS_HISTORY,
+            urlsHistoryFetchRequetBody
+          );
 
         if (!response.error) {
           setErrored({error: false, message: 'Fetch successful'});

@@ -54,12 +54,12 @@ function Footer(): JSX.Element {
 
         <div className={styles.linksSection}>
           <a
-            href="https://kutt.it"
+            href="https://github.com/thedevs-network/kutt"
             target="_blank"
             rel="nofollow noopener noreferrer"
             className={clsx(styles.linkItem, styles.narrow)}
           >
-            Kutt.it
+            Kutt Project
           </a>
           <span className={styles.linkDivider} />
           <a

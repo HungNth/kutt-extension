@@ -375,26 +375,6 @@
   opacity: 0;
 }
 
-.advancedSection {
-  margin-top: 0.75rem;
-  padding: 1rem;
-  background-color: rgba($gray-200, 0.5);
-  border-radius: $radius-md;
-  border: 1px solid $gray-200;
-  max-height: 200px;
-  opacity: 1;
-  overflow: visible;
-  transition: max-height $transition-normal, opacity $transition-normal, margin-top $transition-normal, padding $transition-normal;
-
-  &.hidden {
-    max-height: 0;
-    opacity: 0;
-    margin-top: 0;
-    padding: 0 1rem;
-    border-color: transparent;
-    overflow: hidden;
-  }
-}
 
 .resetSection {
   display: flex;

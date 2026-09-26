@@ -2,10 +2,9 @@ import {isNull, EMPTY_STRING} from '@abhijithvijayan/ts-utils';
 import type {JSX} from 'react';
 import {useEffect} from 'react';
 
-import {Kutt, UserSettingsResponseProperties} from '../Background';
+import {UserSettingsResponseProperties} from '../Background';
 import {openExtOptionsPage} from '../util/tabs';
-import {isValidUrl} from '../util/link';
-
+import {getConnectionConfig} from '../util/connection';
 import {
   ExtensionSettingsActionTypes,
   DomainOptionsProperties,
@@ -37,56 +36,18 @@ function Popup(): JSX.Element {
     async function getUserSettings(): Promise<void> {
       const {settings = {}} = await getExtensionSettings();
 
-      // No API Key set
-      if (
-        !Object.prototype.hasOwnProperty.call(settings, 'apikey') ||
-        (settings.apikey as string) === EMPTY_STRING
-      ) {
-        requestStatusDispatch({
-          type: RequestStatusActionTypes.SET_REQUEST_STATUS,
-          payload: {
-            error: true,
-            message: 'Extension requires an API Key to work',
-          },
-        });
-        requestStatusDispatch({
-          type: RequestStatusActionTypes.SET_LOADING,
-          payload: false,
-        });
+      const connection = getConnectionConfig(settings);
 
-        // Open options page
-        setTimeout(() => openExtOptionsPage(), 1300);
-
+      // Unconfigured connection: redirect to options immediately
+      if (!connection) {
+        openExtOptionsPage();
         return;
       }
 
-      let defaultHost: HostProperties = Kutt;
-
-      // If `advanced` field is true
-      if (
-        Object.prototype.hasOwnProperty.call(settings, 'advanced') &&
-        (settings.advanced as boolean)
-      ) {
-        // If `host` field is set
-        if (
-          Object.prototype.hasOwnProperty.call(settings, 'host') &&
-          (settings.host as string)?.trim().length > 0 &&
-          isValidUrl(settings.host as string)
-        ) {
-          defaultHost = {
-            hostDomain:
-              (settings.host as string)
-                .replace('http://', EMPTY_STRING)
-                .replace('https://', EMPTY_STRING)
-                .replace('www.', EMPTY_STRING)
-                .split(/[/?#]/)[0] || EMPTY_STRING,
-            hostUrl: (settings.host as string).endsWith('/')
-              ? (settings.host as string).slice(0, -1)
-              : (settings.host as string),
-          };
-        }
-      }
-
+      const defaultHost: HostProperties = {
+        hostDomain: connection.hostDomain,
+        hostUrl: connection.hostUrl,
+      };
       // `history` field set - default to true for new users
       let historyEnabled = true;
       if (Object.prototype.hasOwnProperty.call(settings, 'history')) {

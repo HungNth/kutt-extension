@@ -1,8 +1,6 @@
 import type {JSX} from 'react';
 import {memo} from 'react';
 
-import {Kutt} from '../Background';
-
 import styles from './Header.module.scss';
 
 type Props = {
@@ -12,14 +10,14 @@ type Props = {
 
 function Header({
   subtitle = 'Extension Settings',
-  hostUrl = Kutt.hostUrl,
+  hostUrl = '',
 }: Props): JSX.Element {
   return (
     <header className={styles.header}>
       <a
-        href={hostUrl}
-        target="_blank"
-        rel="noopener noreferrer"
+        {...(hostUrl
+          ? {href: hostUrl, target: '_blank', rel: 'noopener noreferrer'}
+          : {})}
         className={styles.logoContainer}
       >
         <img

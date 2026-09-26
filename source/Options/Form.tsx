@@ -7,29 +7,25 @@ import {useExtensionSettings} from '../contexts/extension-settings-context';
 import {
   updateExtensionSettings,
   clearExtensionSettings,
+  getExtensionSettings,
 } from '../util/settings';
 import {CHECK_API_KEY} from '../Background/constants';
 import messageUtil from '../util/messageUtil';
-import {isValidUrl} from '../util/link';
+import {
+  normalizeKuttInstanceUrl,
+  isValidKuttInstanceUrl,
+  applyConnectionVerification,
+} from '../util/connection';
 import {
   SuccessfulApiKeyCheckProperties,
   AuthRequestBodyProperties,
   ApiErroredProperties,
   ErrorStateProperties,
-  Kutt,
 } from '../Background';
 
 import Icon from '../components/Icon';
 
 import styles from './Form.module.scss';
-
-type OptionsFormValuesProperties = {
-  apikey: string;
-  history: boolean;
-  advanced: boolean;
-  host: string;
-  reuse: boolean;
-};
 
 type FormErrors = {
   apikey?: string;
@@ -41,10 +37,6 @@ type FormValidity = {
   host?: boolean;
 };
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const onSave = (values: OptionsFormValuesProperties): Promise<any> =>
-  // should always return a Promise
-  updateExtensionSettings(values); // update local settings
 function Form(): JSX.Element {
   const extensionSettingsState = useExtensionSettings()[0];
   const hostInputRef = useRef<HTMLInputElement>(null);
@@ -56,79 +48,58 @@ function Form(): JSX.Element {
     message: '',
   });
 
-  const [formValues, setFormValues] = useState<OptionsFormValuesProperties>({
-    apikey: extensionSettingsState.apikey,
-    history: extensionSettingsState.history,
-    advanced: extensionSettingsState.advanced,
-    host:
-      (extensionSettingsState.advanced &&
-        extensionSettingsState.host.hostUrl) ||
-      '',
-    reuse: extensionSettingsState.reuse,
-  });
+  // Staged connection fields (NOT auto-saved)
+  const [stagedHost, setStagedHost] = useState<string>(
+    extensionSettingsState.host.hostUrl || ''
+  );
+  const [stagedApiKey, setStagedApiKey] = useState<string>(
+    extensionSettingsState.apikey || ''
+  );
+
+  // Sync staged state when external hydrated settings change
+  useEffect(() => {
+    if (extensionSettingsState.host.hostUrl) {
+      setStagedHost(extensionSettingsState.host.hostUrl);
+    }
+    if (extensionSettingsState.apikey) {
+      setStagedApiKey(extensionSettingsState.apikey);
+    }
+  }, [extensionSettingsState.host.hostUrl, extensionSettingsState.apikey]);
+
+  // Preferences (auto-saved independently)
+  const [historyPref, setHistoryPref] = useState<boolean>(
+    extensionSettingsState.history
+  );
+  const [reusePref, setReusePref] = useState<boolean>(
+    extensionSettingsState.reuse
+  );
+
+  useEffect(() => {
+    setHistoryPref(extensionSettingsState.history);
+  }, [extensionSettingsState.history]);
+
+  useEffect(() => {
+    setReusePref(extensionSettingsState.reuse);
+  }, [extensionSettingsState.reuse]);
 
   const [formErrors, setFormErrors] = useState<FormErrors>({});
   const [formValidity, setFormValidity] = useState<FormValidity>({});
 
+  const validStagedHost = isValidKuttInstanceUrl(stagedHost);
+  const normalizedStagedHost = normalizeKuttInstanceUrl(stagedHost);
+
   const isFormValid: boolean =
-    ((isUndefined(formValidity.apikey) || formValidity.apikey) &&
-      formValues.apikey.trim().length === 40 &&
-      isUndefined(formErrors.apikey) &&
-      (((isUndefined(formValidity.host) || formValidity.host) &&
-        isUndefined(formErrors.host)) ||
-        !formValues.advanced)) ||
-    false;
+    validStagedHost &&
+    stagedApiKey.trim().length > 0 &&
+    isUndefined(formErrors.host) &&
+    isUndefined(formErrors.apikey);
 
-  // on component mount -> save `settings` object
-  useEffect(() => {
-    onSave({
-      ...formValues,
-      ...(formValues.advanced === false && {host: ''}),
-    });
-  }, [formValues]);
+  function handleHostUrlInputChange(val: string): void {
+    setStagedHost(val);
 
-  function handleApiKeyInputChange(apikey: string): void {
-    setFormValues((prev) => {
-      return {...prev, apikey};
-    });
-    // ToDo: Remove special symbols
-
-    if (!(apikey.trim().length > 0)) {
+    if (val.trim().length === 0) {
       setFormErrors((prev) => {
-        return {...prev, apikey: 'API key missing'};
-      });
-      setFormValidity((prev) => {
-        return {...prev, apikey: false};
-      });
-    } else if (apikey && apikey.trim().length < 40) {
-      setFormErrors((prev) => {
-        return {...prev, apikey: 'API key must be 40 characters'};
-      });
-      setFormValidity((prev) => {
-        return {...prev, apikey: false};
-      });
-    } else if (apikey && apikey.trim().length > 40) {
-      setFormErrors((prev) => {
-        return {...prev, apikey: 'API key cannot exceed 40 characters'};
-      });
-      setFormValidity((prev) => {
-        return {...prev, apikey: false};
-      });
-    } else {
-      setFormErrors((prev) => {
-        const {apikey: _, ...rest} = prev;
-        return rest;
-      });
-      setFormValidity((prev) => {
-        return {...prev, apikey: true};
-      });
-    }
-  }
-
-  function handleHostUrlInputChange(host: string): void {
-    if (!formValues.advanced) {
-      setFormErrors((prev) => {
-        return {...prev, host: 'Enable Advanced Options first'};
+        return {...prev, host: 'Kutt Instance URL is required'};
       });
       setFormValidity((prev) => {
         return {...prev, host: false};
@@ -136,23 +107,12 @@ function Form(): JSX.Element {
       return;
     }
 
-    setFormValues((prev) => {
-      return {...prev, host};
-    });
-
-    if (!(host.trim().length > 0)) {
+    if (!isValidKuttInstanceUrl(val.trim())) {
       setFormErrors((prev) => {
-        return {...prev, host: 'Custom URL cannot be empty'};
-      });
-      setFormValidity((prev) => {
-        return {...prev, host: false};
-      });
-      return;
-    }
-
-    if (!isValidUrl(host.trim()) || host.trim().length < 10) {
-      setFormErrors((prev) => {
-        return {...prev, host: 'Please enter a valid url'};
+        return {
+          ...prev,
+          host: 'Please enter a valid HTTPS URL (e.g., https://kutt.example.com)',
+        };
       });
       setFormValidity((prev) => {
         return {...prev, host: false};
@@ -168,74 +128,136 @@ function Form(): JSX.Element {
     }
   }
 
-  async function handleApiKeyVerification(): Promise<void> {
+  function handleApiKeyInputChange(apikey: string): void {
+    setStagedApiKey(apikey);
+
+    if (apikey.trim().length === 0) {
+      setFormErrors((prev) => {
+        return {...prev, apikey: 'API key is required'};
+      });
+      setFormValidity((prev) => {
+        return {...prev, apikey: false};
+      });
+    } else {
+      setFormErrors((prev) => {
+        const {apikey: _, ...rest} = prev;
+        return rest;
+      });
+      setFormValidity((prev) => {
+        return {...prev, apikey: true};
+      });
+    }
+  }
+
+  async function handleConnect(): Promise<void> {
+    if (!normalizedStagedHost || stagedApiKey.trim().length === 0) {
+      return;
+    }
+
     setSubmitting(true);
-    // request API validation request
+
     const apiKeyValidationBody: AuthRequestBodyProperties = {
-      apikey: formValues.apikey.trim(),
-      hostUrl:
-        (formValues.advanced &&
-          formValues.host.trim().length > 0 &&
-          formValues.host.trim()) ||
-        Kutt.hostUrl,
+      apikey: stagedApiKey.trim(),
+      hostUrl: normalizedStagedHost,
     };
 
-    // API call
     const response: SuccessfulApiKeyCheckProperties | ApiErroredProperties =
       await messageUtil.send(CHECK_API_KEY, apiKeyValidationBody);
 
     if (!response.error) {
-      // set top-level status
-      setErrored({error: false, message: 'Valid API Key'});
+      setErrored({error: false, message: 'Connected successfully'});
 
-      // Store user account information
-      const {domains, email} = response.data;
-      await updateExtensionSettings({user: {domains, email}});
+      // Atomically commit verified credentials and account data to storage
+      const {settings = {}} = await getExtensionSettings();
+      const updated = applyConnectionVerification({
+        currentSettings: settings,
+        verifiedHostUrl: normalizedStagedHost,
+        verifiedApiKey: stagedApiKey.trim(),
+        verifiedUser: {
+          email: response.data.email,
+          domains: response.data.domains,
+        },
+      });
+
+      await updateExtensionSettings(updated);
     } else {
-      // ---- errored ---- //
       setErrored({error: true, message: response.message});
-
-      // Delete `user` field from settings
-      await updateExtensionSettings({user: null});
     }
 
-    // enable validate button
     setSubmitting(false);
 
     setTimeout(() => {
-      // Reset status
       setErrored({error: null, message: ''});
-    }, 3000);
+    }, 4000);
   }
 
   async function handleResetSettings(): Promise<void> {
     await clearExtensionSettings();
     setShowResetConfirm(false);
-    // Reload the page to reflect cleared settings
     window.location.reload();
   }
 
   return (
     <>
       <div className={styles.formSection}>
+        {/* Kutt Instance URL Input */}
+        <div className={styles.inputGroup}>
+          <label htmlFor="host" className={styles.label}>
+            <span className={styles.labelWithInfo}>
+              Kutt Instance URL
+              <span className={styles.infoIcon}>
+                <Icon name="info" />
+                <span className={styles.tooltip}>
+                  HTTPS URL of your self-hosted Kutt instance (e.g.,
+                  https://kutt.example.com)
+                </span>
+              </span>
+            </span>
+          </label>
+
+          <div className={styles.inputWrapper}>
+            <input
+              ref={hostInputRef}
+              id="host"
+              name="host"
+              type="text"
+              value={stagedHost}
+              onChange={(e: ChangeEvent<HTMLInputElement>): void => {
+                handleHostUrlInputChange(e.target.value);
+              }}
+              placeholder="https://kutt.example.com"
+              spellCheck="false"
+              className={clsx(
+                styles.input,
+                !isUndefined(formValidity.host) &&
+                  !formValidity.host &&
+                  styles.inputError
+              )}
+            />
+          </div>
+
+          <span className={styles.errorText}>{formErrors.host}</span>
+        </div>
+
+        {/* API Key Input */}
         <div className={styles.inputGroup}>
           <label htmlFor="apikey" className={styles.label}>
             API Key
-            <span className={styles.labelLinkWrapper}>
-              <a
-                href={`${
-                  (formValues.advanced && formValues.host) || Kutt.hostUrl
-                }/login`}
-                target="blank"
-                rel="nofollow noopener noreferrer"
-                className={styles.labelLink}
-              >
-                get one?
-              </a>
-              <span className={styles.tooltip}>
-                Get your API key from your Kutt account settings page
+            {normalizedStagedHost && (
+              <span className={styles.labelLinkWrapper}>
+                <a
+                  href={normalizedStagedHost}
+                  target="_blank"
+                  rel="nofollow noopener noreferrer"
+                  className={styles.labelLink}
+                >
+                  Open Instance
+                </a>
+                <span className={styles.tooltip}>
+                  Open your Kutt instance to generate an API key in settings
+                </span>
               </span>
-            </span>
+            )}
           </label>
 
           <div className={styles.inputWrapper}>
@@ -251,10 +273,11 @@ function Form(): JSX.Element {
               id="apikey"
               name="apikey"
               type={!showApiKey ? 'password' : 'text'}
-              value={formValues.apikey}
+              value={stagedApiKey}
               onChange={(e: ChangeEvent<HTMLInputElement>): void => {
-                handleApiKeyInputChange(e.target.value.trim());
+                handleApiKeyInputChange(e.target.value);
               }}
+              placeholder="Paste your API key"
               spellCheck="false"
               className={clsx(
                 styles.input,
@@ -269,14 +292,15 @@ function Form(): JSX.Element {
         </div>
       </div>
 
+      {/* Connect Action Button */}
       <div className={styles.validateSection}>
         <button
           type="button"
           disabled={submitting || !isFormValid}
-          onClick={handleApiKeyVerification}
+          onClick={handleConnect}
           className={styles.validateButton}
         >
-          <span className={styles.validateText}>Validate</span>
+          <span className={styles.validateText}>Connect</span>
 
           <Icon
             name={
@@ -306,6 +330,7 @@ function Form(): JSX.Element {
         )}
       </div>
 
+      {/* Preferences Section */}
       <div className={styles.toggleSection}>
         <label htmlFor="history" className={styles.toggleLabel}>
           <span className={styles.toggleTextWithInfo}>
@@ -321,20 +346,17 @@ function Form(): JSX.Element {
           <span className={styles.toggleWrapper}>
             <span className={styles.toggleTrack} />
             <span
-              className={clsx(
-                styles.toggleKnob,
-                formValues.history && styles.active
-              )}
+              className={clsx(styles.toggleKnob, historyPref && styles.active)}
             >
               <input
                 id="history"
                 name="history"
                 type="checkbox"
-                checked={formValues.history}
+                checked={historyPref}
                 onChange={(e: ChangeEvent<HTMLInputElement>): void => {
-                  setFormValues((prev) => {
-                    return {...prev, history: e.target.checked};
-                  });
+                  const val = e.target.checked;
+                  setHistoryPref(val);
+                  updateExtensionSettings({history: val});
                 }}
                 className={styles.toggleInput}
               />
@@ -357,108 +379,23 @@ function Form(): JSX.Element {
           <span className={styles.toggleWrapper}>
             <span className={styles.toggleTrack} />
             <span
-              className={clsx(
-                styles.toggleKnob,
-                formValues.reuse && styles.active
-              )}
+              className={clsx(styles.toggleKnob, reusePref && styles.active)}
             >
               <input
                 id="reuse"
                 name="reuse"
                 type="checkbox"
-                checked={formValues.reuse}
+                checked={reusePref}
                 onChange={(e: ChangeEvent<HTMLInputElement>): void => {
-                  setFormValues((prev) => {
-                    return {...prev, reuse: e.target.checked};
-                  });
+                  const val = e.target.checked;
+                  setReusePref(val);
+                  updateExtensionSettings({reuse: val});
                 }}
                 className={styles.toggleInput}
               />
             </span>
           </span>
         </label>
-
-        <label htmlFor="advanced" className={styles.toggleLabel}>
-          <span className={styles.toggleTextWithInfo}>
-            <span className={styles.toggleText}>Show Advanced Options</span>
-            <span className={styles.infoIcon}>
-              <Icon name="info" />
-              <span className={styles.tooltip}>
-                Configure a custom self-hosted Kutt instance URL
-              </span>
-            </span>
-          </span>
-
-          <span className={styles.toggleWrapper}>
-            <span className={styles.toggleTrack} />
-            <span
-              className={clsx(
-                styles.toggleKnob,
-                formValues.advanced && styles.active
-              )}
-            >
-              <input
-                id="advanced"
-                name="advanced"
-                type="checkbox"
-                checked={formValues.advanced}
-                onChange={(e: ChangeEvent<HTMLInputElement>): void => {
-                  setFormValues((prev) => {
-                    return {...prev, advanced: e.target.checked};
-                  });
-                  if (e.target.checked) {
-                    setTimeout(() => hostInputRef.current?.focus(), 350);
-                  }
-                }}
-                className={styles.toggleInput}
-              />
-            </span>
-          </span>
-        </label>
-
-        <div
-          className={clsx(
-            styles.advancedSection,
-            !formValues.advanced && styles.hidden
-          )}
-        >
-          <div className={styles.inputGroup}>
-            <label htmlFor="host" className={styles.label}>
-              <span className={styles.labelWithInfo}>
-                Custom Host
-                <span className={styles.infoIcon}>
-                  <Icon name="info" />
-                  <span className={styles.tooltip}>
-                    URL of your self-hosted Kutt instance (e.g.,
-                    https://kutt.example.com)
-                  </span>
-                </span>
-              </span>
-            </label>
-
-            <div className={styles.inputWrapper}>
-              <input
-                ref={hostInputRef}
-                id="host"
-                name="host"
-                type="text"
-                value={formValues.host}
-                onChange={(e: ChangeEvent<HTMLInputElement>): void => {
-                  handleHostUrlInputChange(e.target.value.trim());
-                }}
-                spellCheck="false"
-                className={clsx(
-                  styles.input,
-                  !isUndefined(formValidity.host) &&
-                    !formValidity.host &&
-                    styles.inputError
-                )}
-              />
-            </div>
-
-            <span className={styles.errorText}>{formErrors.host}</span>
-          </div>
-        </div>
       </div>
 
       <div className={styles.resetSection}>
@@ -496,8 +433,8 @@ function Form(): JSX.Element {
               <span className={styles.modalTitle}>Reset Settings?</span>
             </div>
             <p className={styles.modalText}>
-              This will permanently delete your API key and all preferences. You
-              will need to reconfigure the extension.
+              This will permanently delete your API key, instance connection,
+              and all preferences. You will need to reconfigure the extension.
             </p>
             <div className={styles.modalActions}>
               <button
