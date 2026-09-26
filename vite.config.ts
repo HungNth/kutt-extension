@@ -8,8 +8,8 @@ import WextManifest from 'vite-plugin-wext-manifest';
 
 export default defineConfig(({mode}) => {
   const isDevelopment = mode !== 'production';
-  const sourcePath = path.resolve(__dirname, 'source');
-  const destPath = path.resolve(__dirname, 'extension');
+  const sourcePath = path.resolve(import.meta.dirname, 'source');
+  const destPath = path.resolve(import.meta.dirname, 'extension');
   const targetBrowser = process.env.TARGET_BROWSER || 'chrome';
 
   const getOutDir = () => path.resolve(destPath, targetBrowser);
@@ -101,11 +101,12 @@ export default defineConfig(({mode}) => {
       },
     },
 
-    // esbuild options - drop console/debugger in production
-    esbuild:
+    // oxc options - drop console/debugger in production (Vite 8)
+    oxc:
       mode === 'production'
         ? {
-            drop: ['console', 'debugger'],
+            dropConsole: true,
+            dropDebugger: true,
           }
         : {},
   };
