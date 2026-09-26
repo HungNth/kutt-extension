@@ -2,25 +2,23 @@
 <h1 align="center">kutt-extension</h1>
 <p align="center">Browser extension for self-hosted <a href="https://github.com/thedevs-network/kutt">Kutt</a> URL shortener instances</p>
 <div align="center">
-  <a href="https://github.com/thedevs-network/kutt-extension/actions/workflows/build.yml">
-    <img src="https://github.com/thedevs-network/kutt-extension/actions/workflows/build.yml/badge.svg?branch=master" alt="Build" />
+  <a href="https://github.com/HungNth/kutt-extension/actions/workflows/build.yml">
+    <img src="https://github.com/HungNth/kutt-extension/actions/workflows/build.yml/badge.svg?branch=main" alt="Build" />
   </a>
-  <a href="https://github.com/thedevs-network/kutt-extension/releases/latest">
-    <img src="https://img.shields.io/github/release/thedevs-network/kutt-extension.svg?colorB=blue" alt="Releases" />
+  <a href="https://github.com/HungNth/kutt-extension/releases/latest">
+    <img src="https://img.shields.io/github/release/HungNth/kutt-extension.svg?colorB=blue" alt="Releases" />
   </a>
-  <a href="https://github.com/thedevs-network/kutt-extension/issues?q=is%3Aopen+is%3Aissue">
-    <img src="https://img.shields.io/github/issues-raw/thedevs-network/kutt-extension.svg?colorB=lightgrey" alt="Open Issues" />
+  <a href="https://github.com/HungNth/kutt-extension/issues?q=is%3Aopen+is%3Aissue">
+    <img src="https://img.shields.io/github/issues-raw/HungNth/kutt-extension.svg?colorB=lightgrey" alt="Open Issues" />
   </a>
-  <a href="https://github.com/thedevs-network/kutt-extension/issues?q=is%3Aissue+is%3Aclosed">
-    <img src="https://img.shields.io/github/issues-closed-raw/thedevs-network/kutt-extension.svg?colorB=red" alt="Closed Issues" />
+  <a href="https://github.com/HungNth/kutt-extension/issues?q=is%3Aissue+is%3Aclosed">
+    <img src="https://img.shields.io/github/issues-closed-raw/HungNth/kutt-extension.svg?colorB=red" alt="Closed Issues" />
   </a>
-  <a href="https://github.com/thedevs-network/kutt-extension/blob/master/license">
-    <img src="https://img.shields.io/github/license/thedevs-network/kutt-extension.svg" alt="LICENSE" />
+  <a href="https://github.com/HungNth/kutt-extension/blob/main/license">
+    <img src="https://img.shields.io/github/license/HungNth/kutt-extension.svg" alt="LICENSE" />
   </a>
 </div>
 <hr />
-
-❤️ it? ⭐️ it on [GitHub](https://github.com/thedevs-network/kutt-extension/stargazers)
 
 ## Features
 
@@ -35,9 +33,9 @@
 
 ## Tech Stack
 
-- **Bundler**: [Vite](https://vitejs.dev/) 6
+- **Bundler**: [Vite](https://vitejs.dev/) 8
 - **UI**: [React](https://react.dev/) 19
-- **Language**: [TypeScript](https://www.typescriptlang.org/) 5.7
+- **Language**: [TypeScript](https://www.typescriptlang.org/) 5.9
 - **Styling**: SCSS with CSS Modules
 - **Linting**: ESLint 9 (flat config) + Prettier
 
@@ -46,31 +44,26 @@
 This extension uses **Manifest V3**.
 
 | [![Chrome](https://raw.github.com/alrra/browser-logos/master/src/chrome/chrome_48x48.png)](https://chrome.google.com/webstore/detail/kutt/pklakpjfiegjacoppcodencchehlfnpd) | [![Firefox](https://raw.github.com/alrra/browser-logos/master/src/firefox/firefox_48x48.png)](https://addons.mozilla.org/firefox/addon/kutt/) | [![Opera](https://raw.github.com/alrra/browser-logos/master/src/opera/opera_48x48.png)](https://chrome.google.com/webstore/detail/kutt/pklakpjfiegjacoppcodencchehlfnpd) | [![Edge](https://raw.github.com/alrra/browser-logos/master/src/edge/edge_48x48.png)](https://chrome.google.com/webstore/detail/kutt/pklakpjfiegjacoppcodencchehlfnpd) | [![Brave](https://raw.github.com/alrra/browser-logos/master/src/brave/brave_48x48.png)](https://chrome.google.com/webstore/detail/kutt/pklakpjfiegjacoppcodencchehlfnpd) |
-| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 127+                                                                                                                                        | 127+                                                                                                          | 74+                                                                                                                                      | 88+                                                                                                                                         | 1.21+                                                                                                                                    |
-
-## Installation
-
-- **Chrome**: [Kutt :: Chrome Web Store](https://chrome.google.com/webstore/detail/kutt/pklakpjfiegjacoppcodencchehlfnpd)
-- **Firefox**: [Kutt :: Add-ons for Firefox](https://addons.mozilla.org/firefox/addon/kutt/)
-- **Edge**: [Kutt :: Chrome Web Store](https://chrome.google.com/webstore/detail/kutt/pklakpjfiegjacoppcodencchehlfnpd)
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 127+                                                                                                                                                                        | 127+                                                                                                                                          | 74+                                                                                                                                                                      | 88+                                                                                                                                                                   | 1.21+                                                                                                                                                                    |
 
 ## How to Use
 
 1. Deploy or access your self-hosted Kutt instance running API v2
 2. Generate an API Key in your Kutt account settings
 3. Open the extension Options page, enter your Kutt Instance URL (e.g. `https://kutt.example.com`) and API Key, and click **Connect**
+
 ## Screenshots
 
 <div>
-  <img width="250" src="./.github/assets/popup-v4-1.png" alt="popup" />
+  <img width="250" src="./.github/assets/popup.png" alt="popup" />
   <div>_</div>
-  <img width="330" src="./.github/assets/options-v4-1.png" alt="options" />
+  <img width="330" src="./.github/assets/options.png" alt="options" />
 </div>
 
 ## Development
 
-Ensure you have [Node.js](https://nodejs.org) 20 or later installed.
+Ensure you have [Node.js](https://nodejs.org) 22 or later installed.
 
 ```bash
 # Install dependencies
@@ -111,6 +104,7 @@ npm run lint:fix      # Run ESLint with auto-fix
 - This extension connects exclusively to self-hosted Kutt instances supporting API v2.
 - The Kutt Instance URL must be a valid HTTPS origin.
 - Self-signed certificates must be trusted by your browser or operating system.
+
 ## Contributing and Support
 
 View the Contributing guidelines [here](CONTRIBUTING.md).

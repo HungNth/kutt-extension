@@ -9,30 +9,28 @@
 - `npm install` to install dependencies.
 - To watch file changes in developement
 
-  - Chrome
-    - `npm run dev:chrome`
-  - Firefox
-    - `npm run dev:firefox`
+    - Chrome
+        - `npm run dev:chrome`
+    - Firefox
+        - `npm run dev:firefox`
 
-  (Reload Extension Manually in the browser)
+    (Reload Extension Manually in the browser)
 
 - Load extension in browser
 
-  - ### Chrome
+    - ### Chrome
+        - Go to the browser address bar and type `chrome://extensions`
+        - Check the `Developer Mode` button to enable it.
+        - Click on the `Load Unpacked Extension…` button.
+        - Select your extension’s extracted directory.
 
-    - Go to the browser address bar and type `chrome://extensions`
-    - Check the `Developer Mode` button to enable it.
-    - Click on the `Load Unpacked Extension…` button.
-    - Select your extension’s extracted directory.
+          <img width="400" src="https://i.imgur.com/dJRL7By.png" />
 
-      <img width="400" src="https://i.imgur.com/dJRL7By.png" />
+    - ### Firefox
+        - Load the Add-on via `about:debugging` as temporary Add-on.
+        - Choose the `manifest.json` file in the extracted directory
 
-  - ### Firefox
-
-    - Load the Add-on via `about:debugging` as temporary Add-on.
-    - Choose the `manifest.json` file in the extracted directory
-
-      <img width="400" src="https://i.imgur.com/aAL5dQg.png" />
+          <img width="400" src="https://i.imgur.com/aAL5dQg.png" />
 
 - Configure your self-hosted Kutt Instance URL and API Key in the extension's options page.
 
@@ -44,5 +42,4 @@ Download latest `Release`
 
 [<img src=".github/assets/direct-download.png"
 alt="Direct download"
-height="50">](https://github.com/thedevs-network/kutt-extension/releases)
-
+height="50">](https://github.com/HungNth/kutt-extension/releases)
