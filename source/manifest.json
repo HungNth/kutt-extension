@@ -38,8 +38,8 @@
     "__firefox__scripts": ["assets/js/background.bundle.js"],
     "__firefox__type": "module"
   },
-  "__chrome__minimum_chrome_version": "88",
-  "permissions": ["activeTab", "storage", "clipboardWrite"],
+  "__chrome__minimum_chrome_version": "127",
+  "permissions": ["activeTab", "storage", "clipboardWrite", "contextMenus"],
   "host_permissions": ["http://*/*", "https://*/*"],
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'self';"
