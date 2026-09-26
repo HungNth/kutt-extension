@@ -19,10 +19,6 @@ import {
   clearPendingTargetUrl,
   createBrowserStorageAdapter,
 } from '../util/quickShorten';
-export enum StoreLinks {
-  chrome = 'https://chrome.google.com/webstore/detail/kutt/pklakpjfiegjacoppcodencchehlfnpd/reviews',
-  firefox = 'https://addons.mozilla.org/en-US/firefox/addon/kutt/reviews/',
-}
 
 // **** ------------------ **** //
 

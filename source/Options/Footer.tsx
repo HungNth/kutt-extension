@@ -2,56 +2,12 @@ import type {JSX} from 'react';
 import {memo} from 'react';
 import clsx from 'clsx';
 
-import {detectBrowser} from '../util/browser';
-import {StoreLinks} from '../Background';
-
-import Icon from '../components/Icon';
-
 import styles from './Footer.module.scss';
 
 function Footer(): JSX.Element {
   return (
     <>
       <footer className={styles.footer}>
-        <div className={styles.ratingSection}>
-          <span className={clsx(styles.dividerLine, styles.left)} />
-          <a
-            href={
-              detectBrowser() === 'firefox'
-                ? StoreLinks.firefox
-                : StoreLinks.chrome
-            }
-            target="_blank"
-            rel="nofollow noopener noreferrer"
-            className={styles.ratingLink}
-          >
-            <div className={styles.starsContainer}>
-              <Icon
-                className={clsx(styles.starIcon, styles.gray)}
-                name="star-white"
-              />
-              <Icon
-                className={clsx(styles.starIcon, styles.gray)}
-                name="star-white"
-              />
-              <Icon
-                className={clsx(styles.starIcon, styles.gray)}
-                name="star-white"
-              />
-              <Icon
-                className={clsx(styles.starIcon, styles.gray)}
-                name="star-white"
-              />
-              <Icon
-                className={clsx(styles.starIcon, styles.gray)}
-                name="star-white"
-              />
-            </div>
-            <p className={styles.ratingText}>Rate on Store</p>
-          </a>
-          <span className={clsx(styles.dividerLine, styles.right)} />
-        </div>
-
         <div className={styles.linksSection}>
           <a
             href="https://github.com/thedevs-network/kutt"
