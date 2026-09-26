@@ -1,8 +1,6 @@
 import type {JSX} from 'react';
 import {createContext, useReducer, useContext, type ReactNode} from 'react';
 
-import {Kutt} from '../Background';
-
 export enum ExtensionSettingsActionTypes {
   HYDRATE_EXTENSION_SETTINGS = 'set-extension-settings',
   RELOAD_EXTENSION_SETTINGS = 'reload-extension-settings',
@@ -22,21 +20,13 @@ export type DomainOptionsProperties = {
 
 type HYDRATE_EXTENSION_SETTINGS = {
   type: ExtensionSettingsActionTypes.HYDRATE_EXTENSION_SETTINGS;
-  payload:
-    | {
-        apikey: string;
-        domainOptions: DomainOptionsProperties[];
-        host: HostProperties;
-        history: boolean;
-        reuse: boolean;
-      }
-    | {
-        apikey: string;
-        host: HostProperties;
-        history: boolean;
-        advanced: boolean;
-        reuse: boolean;
-      };
+  payload: {
+    apikey: string;
+    domainOptions?: DomainOptionsProperties[];
+    host: HostProperties;
+    history: boolean;
+    reuse: boolean;
+  };
 };
 
 type RELOAD_EXTENSION_SETTINGS = {
@@ -52,17 +42,18 @@ type InitialValues = {
   host: HostProperties;
   reload: boolean;
   history: boolean;
-  advanced: boolean;
   reuse: boolean;
 };
 
 const initialValues: InitialValues = {
   apikey: '',
   domainOptions: [],
-  host: Kutt,
+  host: {
+    hostDomain: '',
+    hostUrl: '',
+  },
   reload: false,
   history: true,
-  advanced: false,
   reuse: false,
 };
 

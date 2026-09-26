@@ -9,12 +9,7 @@
 import browser, {Runtime} from 'webextension-polyfill';
 import axios, {AxiosPromise, AxiosError} from 'axios';
 import * as constants from './constants';
-
-export enum Kutt {
-  hostDomain = 'kutt.it',
-  hostUrl = 'https://kutt.it',
-}
-
+import {isValidKuttInstanceUrl} from '../util/connection';
 export enum StoreLinks {
   chrome = 'https://chrome.google.com/webstore/detail/kutt/pklakpjfiegjacoppcodencchehlfnpd/reviews',
   firefox = 'https://addons.mozilla.org/en-US/firefox/addon/kutt/reviews/',
@@ -93,6 +88,12 @@ async function shortenUrl({
 }: ShortUrlActionBodyProperties): Promise<
   SuccessfulShortenStatusProperties | ApiErroredProperties
 > {
+  if (!isValidKuttInstanceUrl(hostUrl)) {
+    return {
+      error: true,
+      message: 'Error: A valid HTTPS Kutt Instance URL is required.',
+    };
+  }
   try {
     const {apikey, ...otherParams} = apiBody;
 
@@ -135,12 +136,11 @@ async function shortenUrl({
         };
       }
 
-      // ToDo: remove in the next major update
       if (err.response.status === 404) {
         return {
           error: true,
           message:
-            'Error: This extension now uses API v2, please update your kutt.it instance.',
+            'Error: This extension requires a Kutt Instance supporting API v2.',
         };
       }
     }
@@ -194,12 +194,26 @@ async function checkApiKey({
 }: AuthRequestBodyProperties): Promise<
   SuccessfulApiKeyCheckProperties | ApiErroredProperties
 > {
+  if (!isValidKuttInstanceUrl(hostUrl)) {
+    return {
+      error: true,
+      message: 'Error: A valid HTTPS Kutt Instance URL is required.',
+    };
+  }
   try {
     const {data}: {data: UserSettingsResponseProperties} =
       await getUserSettings({
         apikey,
         hostUrl,
       });
+
+    if (!data || !Array.isArray(data.domains)) {
+      return {
+        error: true,
+        message:
+          'Error: The Kutt Instance response is incompatible. Expected Kutt API v2 account structure.',
+      };
+    }
 
     return {
       error: false,
@@ -215,9 +229,17 @@ async function checkApiKey({
         };
       }
 
+      if (err.response.status === 404) {
+        return {
+          error: true,
+          message:
+            'Error: Endpoint not found. Ensure your Kutt Instance supports API v2.',
+        };
+      }
+
       return {
         error: true,
-        message: 'Error: Something went wrong.',
+        message: `Error: Server responded with status ${err.response.status}.`,
       };
     }
 
@@ -264,13 +286,18 @@ export type UserShortenedLinkStats = {
 /**
  *  Fetch User's recent 15 shortened urls
  */
-
 async function fetchUrlsHistory({
   apikey,
   hostUrl,
 }: AuthRequestBodyProperties): Promise<
   SuccessfulUrlsHistoryFetchProperties | ApiErroredProperties
 > {
+  if (!isValidKuttInstanceUrl(hostUrl)) {
+    return {
+      error: true,
+      message: 'Error: A valid HTTPS Kutt Instance URL is required.',
+    };
+  }
   try {
     const {data}: {data: UserShortenedLinksHistoryResponseBody} = await axios({
       method: 'GET',
