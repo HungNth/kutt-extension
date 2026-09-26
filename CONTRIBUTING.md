@@ -1,8 +1,8 @@
 ## Contributing Guidelines
 
-## Assets
+## Architecture
 
-- [kutt.it API](https://github.com/thedevs-network/kutt#api) is used to retreive shortened URLs.
+- Connects to self-hosted [Kutt](https://github.com/thedevs-network/kutt) instances using API v2.
 
 ## Development
 
@@ -34,8 +34,7 @@
 
       <img width="400" src="https://i.imgur.com/aAL5dQg.png" />
 
-- Generate an API Key from <a href="https://kutt.it">`https://kutt.it/`</a> (Settings page)
-- Paste and Save the `Key` in extension's `options page`.
+- Configure your self-hosted Kutt Instance URL and API Key in the extension's options page.
 
 `npm run build` builds the extension for all the browsers to `extension/(browser)` directory respectively.
 
@@ -47,10 +46,3 @@ Download latest `Release`
 alt="Direct download"
 height="50">](https://github.com/thedevs-network/kutt-extension/releases)
 
-<hr />
-
-## Self-hosted Kutt
-
-- **Enable Developer Options** to use with self-hosted kutt
-  - Save the self hosted domain in the input (eg: https://mykutt.it)
-    - **Note**: the api endpoint is automatically appended during the api call.

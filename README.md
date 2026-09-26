@@ -1,6 +1,6 @@
 <div align="center"><img width="150" src="source/public/assets/logo.png" /></div>
 <h1 align="center">kutt-extension</h1>
-<p align="center">Browser extension for <a href="https://kutt.it">Kutt.it</a> URL shortener</p>
+<p align="center">Browser extension for self-hosted <a href="https://github.com/thedevs-network/kutt">Kutt</a> URL shortener instances</p>
 <div align="center">
   <a href="https://github.com/thedevs-network/kutt-extension/actions/workflows/build.yml">
     <img src="https://github.com/thedevs-network/kutt-extension/actions/workflows/build.yml/badge.svg?branch=master" alt="Build" />
@@ -57,12 +57,9 @@ This extension uses **Manifest V3**.
 
 ## How to Use
 
-1. Generate an API Key from <a href="https://kutt.it">`https://kutt.it/`</a> after signing up (Settings page)
-
-   <img width="400" src="https://i.imgur.com/qQwqeH5.png" />
-
-2. Paste and Save this `Key` in extension's `options page` when asked
-
+1. Deploy or access your self-hosted Kutt instance running API v2
+2. Generate an API Key in your Kutt account settings
+3. Open the extension Options page, enter your Kutt Instance URL (e.g. `https://kutt.example.com`) and API Key, and click **Connect**
 ## Screenshots
 
 <div>
@@ -111,12 +108,9 @@ npm run lint:fix      # Run ESLint with auto-fix
 
 ## Note
 
-- <a href="https://kutt.it">Kutt.it</a> API permits **50** URLs shortening per day using the API Key
-- **Enable Custom Host** option to use with self-hosted kutt
-  - Save the self hosted domain in the input (eg: `https://mykutt.it`)
-  - **Note**: the api endpoint is automatically appended during the api call
-- _Delay at times while shortening might be the issue with Kutt.it API and not with the extension's_
-
+- This extension connects exclusively to self-hosted Kutt instances supporting API v2.
+- The Kutt Instance URL must be a valid HTTPS origin.
+- Self-signed certificates must be trusted by your browser or operating system.
 ## Contributing and Support
 
 View the Contributing guidelines [here](CONTRIBUTING.md).
