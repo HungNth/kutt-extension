@@ -1,3 +1,4 @@
+@use 'sass:color';
 @use '../styles/variables' as *;
 
 .tableContainer {
@@ -162,7 +163,7 @@
   transition: color $transition-fast;
 
   &:hover {
-    color: darken($blue-500, 10%);
+    color: color.adjust($blue-500, $lightness: -10%);
     text-decoration: underline;
   }
 }
