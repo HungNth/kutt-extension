@@ -63,7 +63,7 @@ function Footer(): JSX.Element {
           </a>
           <span className={styles.linkDivider} />
           <a
-            href="https://git.io/Jn5hS"
+            href="https://github.com/HungNth/kutt-extension/issues"
             target="_blank"
             rel="nofollow noopener noreferrer"
             className={clsx(styles.linkItem, styles.wide)}
@@ -72,7 +72,7 @@ function Footer(): JSX.Element {
           </a>
           <span className={styles.linkDivider} />
           <a
-            href="https://github.com/thedevs-network/kutt-extension"
+            href="https://github.com/HungNth/kutt-extension"
             target="_blank"
             rel="nofollow noopener noreferrer"
             className={clsx(styles.linkItem, styles.narrow)}
