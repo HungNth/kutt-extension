@@ -9,7 +9,16 @@
 import browser, {Runtime} from 'webextension-polyfill';
 import axios, {AxiosPromise, AxiosError} from 'axios';
 import * as constants from './constants';
-import {isValidKuttInstanceUrl} from '../util/connection';
+import {
+  isValidKuttInstanceUrl,
+  getStoredConnectionConfig,
+} from '../util/connection';
+import {getExtensionSettings} from '../util/settings';
+import {
+  setPendingTargetUrl,
+  clearPendingTargetUrl,
+  createBrowserStorageAdapter,
+} from '../util/quickShorten';
 export enum StoreLinks {
   chrome = 'https://chrome.google.com/webstore/detail/kutt/pklakpjfiegjacoppcodencchehlfnpd/reviews',
   firefox = 'https://addons.mozilla.org/en-US/firefox/addon/kutt/reviews/',
@@ -354,7 +363,43 @@ async function fetchUrlsHistory({
  */
 browser.runtime.onInstalled.addListener((): void => {
   console.log('Kutt extension installed');
+
+  browser.contextMenus.create({
+    id: 'kutt-shorten-link',
+    title: 'Shorten link with Kutt',
+    contexts: ['link'],
+  });
 });
+
+export async function handleContextMenuClick(
+  info: browser.Menus.OnClickData
+): Promise<void> {
+  if (info.menuItemId !== 'kutt-shorten-link' || !info.linkUrl) {
+    return;
+  }
+
+  // Clear existing error badge at the start of any new action
+  await browser.action.setBadgeText({text: ''});
+
+  const storageResult = await getExtensionSettings();
+  const config = getStoredConnectionConfig(storageResult);
+
+  if (!config) {
+    await browser.runtime.openOptionsPage();
+    return;
+  }
+
+  const sessionAdapter = createBrowserStorageAdapter(browser.storage.session);
+  try {
+    await setPendingTargetUrl(info.linkUrl, sessionAdapter);
+    await browser.action.openPopup();
+  } catch {
+    await clearPendingTargetUrl(sessionAdapter);
+    await browser.action.setBadgeText({text: '!'});
+  }
+}
+
+browser.contextMenus.onClicked.addListener(handleContextMenuClick);
 
 type MessageRequest = {
   action: string;

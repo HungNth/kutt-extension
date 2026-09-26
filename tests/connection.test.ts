@@ -5,6 +5,7 @@ import {
   isValidKuttInstanceUrl,
   isConfiguredConnection,
   getConnectionConfig,
+  getStoredConnectionConfig,
   applyConnectionVerification,
 } from '../source/util/connection.ts';
 
@@ -228,4 +229,22 @@ test('applyConnectionVerification rejects invalid host or empty key', () => {
       verifiedUser: {email: 'a', domains: []},
     });
   }, /API key cannot be empty/);
+});
+
+test('getStoredConnectionConfig unwraps browser storage results for background entry points', () => {
+  assert.deepEqual(
+    getStoredConnectionConfig({
+      settings: {
+        host: 'https://kutt.example.com',
+        apikey: 'test-api-key',
+      },
+    }),
+    {
+      hostUrl: 'https://kutt.example.com',
+      hostDomain: 'kutt.example.com',
+      apikey: 'test-api-key',
+    }
+  );
+
+  assert.equal(getStoredConnectionConfig({}), null);
 });

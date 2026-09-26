@@ -101,6 +101,12 @@ export function getConnectionConfig(
   };
 }
 
+export function getStoredConnectionConfig(storageResult?: {
+  settings?: PartialSettings | null;
+}): ConnectionConfig | null {
+  return getConnectionConfig(storageResult?.settings);
+}
+
 /**
  * Atomically creates the new settings payload after successful server verification.
  */
