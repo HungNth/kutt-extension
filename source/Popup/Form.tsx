@@ -1,6 +1,12 @@
 import type {JSX} from 'react';
-import {useState, useRef, useEffect, type ChangeEvent} from 'react';
-import {EMPTY_STRING, isEmpty, isNull, get} from '@abhijithvijayan/ts-utils';
+import {
+  useState,
+  useRef,
+  useEffect,
+  useCallback,
+  type ChangeEvent,
+} from 'react';
+import {EMPTY_STRING, isEmpty, get} from '@abhijithvijayan/ts-utils';
 import clsx from 'clsx';
 
 import {useExtensionSettings} from '../contexts/extension-settings-context';
@@ -11,7 +17,17 @@ import {
   RequestStatusActionTypes,
   useRequestStatus,
 } from '../contexts/request-status-context';
-import {isValidUrl, removeProtocol} from '../util/link';
+import {
+  removeProtocol,
+  validateTargetUrl,
+  resolveTargetUrl,
+} from '../util/link';
+import {
+  resolveInitialTargetState,
+  shapeQuickShortenRequest,
+  createBrowserStorageAdapter,
+} from '../util/quickShorten';
+import browser from 'webextension-polyfill';
 import {
   SuccessfulShortenStatusProperties,
   ShortUrlActionBodyProperties,
@@ -55,6 +71,7 @@ function Form(): JSX.Element {
   }, []);
 
   const [formState, setFormState] = useState({
+    target: '',
     domain:
       domainOptions
         .find(({id}) => id === CONSTANTS.DefaultDomainId)
@@ -63,28 +80,142 @@ function Form(): JSX.Element {
     password: '',
   });
   const [formErrors, setFormErrors] = useState<{
+    target?: string;
     customurl?: string;
     password?: string;
   }>({});
+  const submitShorten = useCallback(
+    async (apiBody: ApiBodyProperties): Promise<void> => {
+      setIsSubmitting(true);
+      requestStatusDispatch({
+        type: RequestStatusActionTypes.SET_ACTION_STATUS,
+        payload: null,
+      });
+
+      const apiShortenUrlBody: ShortUrlActionBodyProperties = {
+        apiBody,
+        hostUrl: extensionSettingsState.host.hostUrl,
+      };
+
+      // shorten url in the background
+      const response: SuccessfulShortenStatusProperties | ApiErroredProperties =
+        await messageUtil.send(SHORTEN_URL, apiShortenUrlBody);
+
+      // disable spinner
+      setIsSubmitting(false);
+
+      if (!response.error) {
+        const {
+          data: {link},
+        } = response;
+        // show shortened url
+        requestStatusDispatch({
+          type: RequestStatusActionTypes.SET_REQUEST_STATUS,
+          payload: {
+            error: false,
+            message: link,
+          },
+        });
+        // reset form fields (keep domain selection)
+        setFormState((prev) => {
+          return {...prev, customurl: '', password: ''};
+        });
+        setFormErrors({});
+
+        try {
+          await navigator.clipboard.writeText(link);
+          requestStatusDispatch({
+            type: RequestStatusActionTypes.SET_ACTION_STATUS,
+            payload: {error: false, message: 'Link copied'},
+          });
+        } catch {
+          requestStatusDispatch({
+            type: RequestStatusActionTypes.SET_ACTION_STATUS,
+            payload: {
+              error: true,
+              message: 'Automatic copy failed. Click the link to copy it.',
+            },
+          });
+        }
+      } else {
+        requestStatusDispatch({
+          type: RequestStatusActionTypes.SET_REQUEST_STATUS,
+          payload: {
+            error: true,
+            message: response.message,
+          },
+        });
+      }
+    },
+    [extensionSettingsState.host.hostUrl, requestStatusDispatch]
+  );
+
+  useEffect(() => {
+    async function initTargetUrl(): Promise<void> {
+      // Clear any previous error badge text when popup opens successfully
+      await browser.action.setBadgeText({text: ''});
+
+      const sessionAdapter = createBrowserStorageAdapter(
+        browser.storage.session
+      );
+      const tabs = await getCurrentTab();
+      const tabUrl: string | null = get(tabs, '[0].url', null);
+
+      const {target, isQuickShorten, isValid} = await resolveInitialTargetState(
+        sessionAdapter,
+        tabUrl,
+        validateTargetUrl,
+        resolveTargetUrl
+      );
+
+      setFormState((prev) => {
+        return {...prev, target};
+      });
+
+      if (isQuickShorten) {
+        if (isValid) {
+          // Auto-submit Quick Shorten
+          void submitShorten(
+            shapeQuickShortenRequest({
+              target,
+              apikey: extensionSettingsState.apikey,
+              reuse: extensionSettingsState.reuse,
+            })
+          );
+        } else {
+          setFormErrors((prev) => {
+            return {...prev, target: 'Not a valid URL'};
+          });
+          requestStatusDispatch({
+            type: RequestStatusActionTypes.SET_REQUEST_STATUS,
+            payload: {
+              error: true,
+              message: 'Not a valid URL',
+            },
+          });
+        }
+      }
+    }
+
+    void initTargetUrl();
+  }, [
+    extensionSettingsState.apikey,
+    extensionSettingsState.reuse,
+    requestStatusDispatch,
+    submitShorten,
+  ]);
 
   const isFormValid: boolean =
-    !formErrors.customurl && !formErrors.password && true;
+    !formErrors.target && !formErrors.customurl && !formErrors.password;
 
   async function handleFormSubmit(): Promise<void> {
-    // enable loading screen
-    setIsSubmitting(true);
-    requestStatusDispatch({
-      type: RequestStatusActionTypes.SET_ACTION_STATUS,
-      payload: null,
-    });
-
-    // Get target link to shorten
-    const tabs = await getCurrentTab();
-    const target: string | null = get(tabs, '[0].url', null);
-    const shouldSubmit: boolean = !isNull(target) && isValidUrl(target);
+    const target: string = formState.target.trim();
+    const shouldSubmit: boolean = validateTargetUrl(target);
 
     if (!shouldSubmit) {
-      setIsSubmitting(false);
+      setFormErrors((prev) => {
+        return {...prev, target: 'Not a valid URL'};
+      });
       requestStatusDispatch({
         type: RequestStatusActionTypes.SET_REQUEST_STATUS,
         payload: {
@@ -95,9 +226,13 @@ function Form(): JSX.Element {
       return;
     }
 
+    setFormErrors((prev) => {
+      return {...prev, target: undefined};
+    });
+
     const apiBody: ApiBodyProperties = {
       apikey: extensionSettingsState.apikey,
-      target: target!,
+      target,
       ...(formState.customurl.trim() !== EMPTY_STRING && {
         customurl: formState.customurl.trim(),
       }),
@@ -108,61 +243,7 @@ function Form(): JSX.Element {
       }),
     };
 
-    const apiShortenUrlBody: ShortUrlActionBodyProperties = {
-      apiBody,
-      hostUrl: extensionSettingsState.host.hostUrl,
-    };
-
-    // shorten url in the background
-    const response: SuccessfulShortenStatusProperties | ApiErroredProperties =
-      await messageUtil.send(SHORTEN_URL, apiShortenUrlBody);
-
-    // disable spinner
-    setIsSubmitting(false);
-
-    if (!response.error) {
-      const {
-        data: {link},
-      } = response;
-      // show shortened url
-      requestStatusDispatch({
-        type: RequestStatusActionTypes.SET_REQUEST_STATUS,
-        payload: {
-          error: false,
-          message: link,
-        },
-      });
-      // reset form fields (keep domain selection)
-      setFormState((prev) => {
-        return {...prev, customurl: '', password: ''};
-      });
-      setFormErrors({});
-
-      try {
-        await navigator.clipboard.writeText(link);
-        requestStatusDispatch({
-          type: RequestStatusActionTypes.SET_ACTION_STATUS,
-          payload: {error: false, message: 'Link copied'},
-        });
-      } catch {
-        requestStatusDispatch({
-          type: RequestStatusActionTypes.SET_ACTION_STATUS,
-          payload: {
-            error: true,
-            message: 'Automatic copy failed. Click the link to copy it.',
-          },
-        });
-      }
-    } else {
-      // errored
-      requestStatusDispatch({
-        type: RequestStatusActionTypes.SET_REQUEST_STATUS,
-        payload: {
-          error: true,
-          message: response.message,
-        },
-      });
-    }
+    await submitShorten(apiBody);
   }
 
   function handleCustomUrlInputChange(url: string): void {
@@ -202,9 +283,45 @@ function Form(): JSX.Element {
       });
     }
   }
+  function handleTargetUrlInputChange(url: string): void {
+    setFormState((prev) => {
+      return {...prev, target: url};
+    });
+    if (!validateTargetUrl(url)) {
+      setFormErrors((prev) => {
+        return {...prev, target: 'Not a valid URL'};
+      });
+    } else {
+      setFormErrors((prev) => {
+        return {...prev, target: undefined};
+      });
+    }
+  }
 
   return (
     <div className={styles.formContainer}>
+      <div className={styles.formGroup}>
+        <label htmlFor="target-url" className={styles.label}>
+          Target URL
+        </label>
+        <input
+          id="target-url"
+          name="target"
+          type="text"
+          placeholder="https://example.com"
+          value={formState.target}
+          onChange={(e: ChangeEvent<HTMLInputElement>): void => {
+            handleTargetUrlInputChange(e.target.value);
+          }}
+          disabled={isSubmitting}
+          spellCheck="false"
+          className={clsx(styles.input, formErrors.target && styles.inputError)}
+        />
+        {formErrors.target && (
+          <span className={styles.errorText}>{formErrors.target}</span>
+        )}
+      </div>
+
       <div className={styles.formGroup}>
         <label className={styles.label}>Domain</label>
 

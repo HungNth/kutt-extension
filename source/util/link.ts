@@ -12,3 +12,21 @@ export function isValidUrl(url: string): boolean {
 
   return re.test(url);
 }
+
+export function validateTargetUrl(url: string | null | undefined): boolean {
+  if (!url) {
+    return false;
+  }
+  const trimmed = url.trim();
+  if (!trimmed) {
+    return false;
+  }
+  return isValidUrl(trimmed);
+}
+
+export function resolveTargetUrl(tabUrl: string | null | undefined): string {
+  if (validateTargetUrl(tabUrl)) {
+    return (tabUrl as string).trim();
+  }
+  return '';
+}
