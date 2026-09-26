@@ -1,7 +1,7 @@
 {
   "name": "kutt-extension",
   "version": "4.4.2",
-  "description": "Kutt.it extension for browsers.",
+  "description": "Browser extension for self-hosted Kutt URL shortener instances.",
   "license": "MIT",
   "repository": "https://github.com/thedevs-network/kutt-extension.git",
   "author": {
