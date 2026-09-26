@@ -1,0 +1,3 @@
+# Require Chrome 127 for context-menu popup opening
+
+The hyperlink Quick Shorten workflow stores a pending Target URL and opens the extension action popup so the popup can submit and copy the resulting Shortened Link. Chrome exposes `action.openPopup()` to ordinary extensions only from Chrome 127; Chrome 118–126 restrict it to policy-installed extensions, and Chrome 88–117 do not provide the required path. The extension therefore raises its Chrome minimum from 88 to 127 instead of adding a degraded manual-open fallback, keeping Quick Shorten behavior consistent with Firefox 127 and avoiding two interaction models.

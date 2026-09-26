@@ -16,6 +16,10 @@ _Avoid_: Domain, host, custom URL, server URL
 A domain managed by a Kutt Instance and available for creating shortened links.
 _Avoid_: Host, Kutt Instance URL
 
+**Target URL**:
+The full HTTP or HTTPS URL submitted to a Kutt Instance to create a Shortened Link.
+_Avoid_: Current tab URL, destination link, original URL
+
 **Shortened Link**:
 The fully qualified URL returned by a Kutt Instance after successfully creating a short link.
 _Avoid_: Shortened URL, result URL
